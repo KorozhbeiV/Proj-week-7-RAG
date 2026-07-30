@@ -1,7 +1,12 @@
 [project]
 name = "proj-week-7-rag"
 version = "0.1.0"
-description = "Add your description here"
+description = "Building the RAG system that actually works"
 readme = "README.md"
 requires-python = ">=3.14"
-dependencies = []
+dependencies = [
+    "dotenv>=0.9.9",
+    "langchain-experimental>=0.4.2",
+    "langchain-google-genai>=4.3.2",
+    "loguru>=0.7.3",
+]
