@@ -25,9 +25,6 @@ class GeminiEmbedClientCreator(BaseEmbedClientCreator[Client]):
 
 
     def ebmeding_client(self) -> GoogleGenerativeAIEmbeddings:
-        """
-        ## This method is dedicated only to use with embeding models 
-        """
         return GoogleGenerativeAIEmbeddings(
             client=self._create_raw_client(),
             model=f'models/{self._model_name}'
