@@ -1,8 +1,5 @@
 from typing import TYPE_CHECKING, overload
-
-from langchain_core.embeddings import Embeddings
-
-from src.domain.facades.abs_embeding_processor import EmbedingProcessor
+from src.domain.pipelines.retrieval.facades.abs_embeding_processor import EmbedingProcessor
 
 if TYPE_CHECKING:
     from langchain_core.embeddings import Embeddings

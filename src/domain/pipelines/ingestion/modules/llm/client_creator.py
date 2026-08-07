@@ -5,18 +5,19 @@ from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.language_models.chat_models import BaseChatModel
 
 from src.domain.shared.api_keys import GEMINI_API_KEY
-from src.domain.facades.abs_llm_client import ClientCreator
+from src.domain.pipelines.ingestion.facades.abs_llm_client import LlmClientCreator
+from src.domain.shared.registry.enums import LlmClientCreatorKind
 
 TNativeClient = TypeVar('TNativeClient')
 
 
 
-class BaseClientCreator(ClientCreator[TNativeClient]):
+class BaseLlmClientCreator(LlmClientCreator[TNativeClient]):
     ...
 
 
 
-class GeminiClientCreator(BaseClientCreator[Client]):
+class GeminiClientCreator(BaseLlmClientCreator[Client], kind=LlmClientCreatorKind.GEMINI_CLIENT_CREATOR.value):
     def __init__(self,
                  model_name: str | None
                  ) -> None:
