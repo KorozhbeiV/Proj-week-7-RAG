@@ -1,5 +1,6 @@
 from typing import TYPE_CHECKING, Generic, TypeVar, ClassVar, Any
-from abc import ABC, abstractmethod
+from abc import abstractmethod
+from src.domain.pipelines.ingestion.facades.main_pipeline_class import IngestionPipeline
 
 if TYPE_CHECKING:
     from langchain_core.embeddings import Embeddings
@@ -8,7 +9,7 @@ TNativeClient = TypeVar('TNativeClient')
 
 
 
-class EmbedClientCreator(ABC, Generic[TNativeClient]):
+class EmbedClientCreator(IngestionPipeline, Generic[TNativeClient]):
     registry: ClassVar[dict[str, type[EmbedClientCreator[Any]]]]
     
     def __init__(self, model_name: str | None) -> None:

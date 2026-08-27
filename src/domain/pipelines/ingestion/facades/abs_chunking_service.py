@@ -1,5 +1,6 @@
 from typing import TYPE_CHECKING, Any, ClassVar
-from abc import ABC, abstractmethod
+from abc import abstractmethod
+from src.domain.pipelines.ingestion.facades.main_pipeline_class import IngestionPipeline
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -7,11 +8,12 @@ if TYPE_CHECKING:
 
 
 
-class ChunkingService(ABC):
+class ChunkingService(IngestionPipeline):
     registry: ClassVar[dict[str, type[ChunkingService]]]
 
     def __init__(self, embeding_model: Embeddings) -> None:
         self._embeding_model = embeding_model
+        self._chunking_type: str
 
     def __init_subclass__(cls, kind: str | None = None, **kwargs: Any) -> None:
         super().__init_subclass__(**kwargs)
@@ -24,7 +26,11 @@ class ChunkingService(ABC):
         ...
         
     @abstractmethod
-    def split_on_chunks(self,
-                        text: str,
-                        ) -> list[str]:
+    def split_on_chunks(self, text: str) -> tuple[list[str], int, str]:
+        """
+        ## Returns:
+        - list of str chunks
+        - number of chunks
+        - type of chunking
+        """
         ...
