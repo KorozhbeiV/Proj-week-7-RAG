@@ -11,7 +11,8 @@ class Action(Enum):
 
 class Status(Enum):
     PENDING = 'pending'
-    VBD_UPDATED = 'vdb_updated'
+    FILE_PROCESSED = 'file_processed'
     CHUNKED = 'chunked'
     EMBEDED = 'embeded'
+    VBD_UPDATED = 'vdb_updated'
     SYNCED = 'synced'

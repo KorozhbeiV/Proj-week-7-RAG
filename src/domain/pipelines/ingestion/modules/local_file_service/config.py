@@ -1,0 +1,4 @@
+BATCH_SIZE_FOR_ITERATORS: int = 10
+METADATA_FOLDER_NAME = 'metadata'
+CHUNKS_FOLDER_NAME = 'chunks'
+DEFAULT_FILE_NAME = 'content.txt'
