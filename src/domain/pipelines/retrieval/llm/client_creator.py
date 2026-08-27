@@ -5,7 +5,7 @@ from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.language_models.chat_models import BaseChatModel
 
 from src.domain.shared.api_keys import GEMINI_API_KEY
-from src.domain.pipelines.ingestion.facades.abs_llm_client import LlmClientCreator
+from src.domain.pipelines.retrieval.facades.abs_llm_client import LlmClientCreator
 from src.domain.shared.registry.enums import LlmClientCreatorKind
 
 TNativeClient = TypeVar('TNativeClient')
