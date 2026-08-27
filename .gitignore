@@ -12,3 +12,4 @@ wheels/
 .env
 .github
 logs
+_local_data/
