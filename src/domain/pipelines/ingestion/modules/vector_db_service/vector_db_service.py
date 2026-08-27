@@ -1,24 +1,25 @@
 """
 ## Responsible for:
-- Reading
 - Updating
 - Deleting
 - Replacing
 - Error raising (if any)
-in vector DB
+in the given vector DB
 """
-from __future__ import annotations
 from typing import Any, Self, cast
+from dataclasses import replace
 from langchain_qdrant import QdrantVectorStore
 from langchain_core.vectorstores import VectorStore
-from langchain_core.documents import Document
 from langchain_core.embeddings import Embeddings
 from qdrant_client import QdrantClient
 from qdrant_client.models import Distance, VectorParams
+from src.domain.pipelines.ingestion.pipeline_entities.data_classes import IngestionPipelineContext
 from src.domain.shared.api_keys import QDRANT_API_KEY, QDRANT_CLASTER_ENDPOINT
 from src.domain.shared.config.constants import QDRANT_VECTOR_DB_COLLECTION_NAME
 from src.domain.pipelines.ingestion.facades.abs_vector_db_service import VectorDBService
 from src.domain.shared.registry.enums import VectorDBServiceKind
+from src.domain.pipelines.ingestion.pipeline_entities.enums import Action
+from src.domain.pipelines.ingestion.pipeline_entities.enums import Status
 
 
 
@@ -27,10 +28,45 @@ class BaseDBService(VectorDBService):
         super().__init__(store)
 
     @classmethod
-    def get_instance(cls, store: VectorStore) -> Self:
+    def _get_instance(cls, store: VectorStore) -> Self:
         if cls._instance is None:
             cls._instance = cls(store)
-        return cast(Self, cls._instance)    
+        return cast(Self, cls._instance)
+    
+
+    def _get_ids_to_delete(self, metadatas: list[dict[str, Any]]) -> list[str | int]:
+        return [id["chunk_id"] for id in metadatas]
+
+
+    def _perform_action_over_files(self, data: IngestionPipelineContext) -> dict[str, Any]:
+        assert (action := data.action) is not None
+        assert (md := data.full_metadata) != False # Is not an empty list
+
+        if action == Action.DELETED:
+            ids_to_delete = self._get_ids_to_delete(md)
+            return {"deleted_success": self.delete_from_db(ids_to_delete),
+                    "chunks_id_added": [],
+                    "chunks_id_updated": []
+                    }
+        assert (chunks := data.chunks) is not None
+        if action == Action.UPDATED:
+            ids_to_delete = self._get_ids_to_delete(md)
+            return {"chunks_id_updated": self.update_db(ids_to_delete,chunks, md),
+                    "chunks_id_added": [],
+                    "deleted_success": None
+                    }
+        if action == Action.ADDED:
+            return {"chunks_id_added": self.add_to_db(chunks, md),
+                    "chunks_id_updated": [],
+                    "deleted_success": None
+                    }
+        raise RuntimeError(f"No action was performed over the given file: '{data.f_path}'")
+
+
+    def execute_module(self, data: IngestionPipelineContext) -> IngestionPipelineContext:
+        performed = self._perform_action_over_files(data)
+        performed.update({"status": Status.VBD_UPDATED})
+        return replace(data, **performed)
 
 
 
@@ -51,14 +87,13 @@ class QdrantDBService(BaseDBService, kind=VectorDBServiceKind.QDRANT_DB_SERVICE.
                     collection_name=QDRANT_VECTOR_DB_COLLECTION_NAME,
                     embedding=embeding_model,
                 )
-        return cls.get_instance(store)
+        return cls._get_instance(store)
 
 
-    def read_db(self, query: str, k: int) -> list[Document]:
-        return self._store.similarity_search(query=query, k=k)
-
-
-    def update_db(self, texts: list[str], metadatas: list[dict[str, Any]]) -> list[str | int]:
+    def add_to_db(self,
+                    texts: list[str],
+                    metadatas: list[dict[str, Any]]
+                    ) -> list[str | int]:
         store = cast(QdrantVectorStore, self._store)
         # The library does not provide enough stabs
         return store.add_texts(texts=texts, metadatas=metadatas) #pyright: ignore
@@ -71,15 +106,10 @@ class QdrantDBService(BaseDBService, kind=VectorDBServiceKind.QDRANT_DB_SERVICE.
         return result
 
 
-    def replace_in_db(self,
+    def update_db(self,
                     ids: list[str | int],
                     new_texts: list[str],
                     metadatas: list[dict[str, Any]]
                     ) -> list[str | int]:
-        """
-        ## Syntax-sugar-method
-        - Uses both, `delete_from_db` and `update_db` methods
-        - It's possible to process the same action by calling these two method directly
-        """
         self.delete_from_db(ids)
-        return self.update_db(new_texts, metadatas)
+        return self.add_to_db(new_texts, metadatas)
