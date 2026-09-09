@@ -1,6 +1,6 @@
 from typing import TYPE_CHECKING, Any, ClassVar
 from abc import abstractmethod
-from src.domain.pipelines.ingestion.facades.main_pipeline_class import IngestionPipeline
+from src.domain.pipelines.ingestion.primitive.orcestration.abs_main_pipeline_class import IngestionPipeline
 
 if TYPE_CHECKING:
     from pathlib import Path

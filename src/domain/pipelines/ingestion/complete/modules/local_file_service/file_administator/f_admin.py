@@ -1,21 +1,20 @@
 import shutil
-import hashlib
 from pathlib import Path
 from typing import Literal, Callable
 from datetime import datetime, timezone
-from src.domain.pipelines.ingestion.facades.abs_f_pre_processor import FilePreProcessor
-from src.domain.pipelines.ingestion.modules.local_file_service.pathes import RAW_DATA, PROCESSED_DATA
-from src.domain.pipelines.ingestion.facades.abs_f_administrator import FileAdministrator
-from src.domain.pipelines.ingestion.modules.local_file_service.config import CHUNKS_FOLDER_NAME, DEFAULT_FILE_NAME
+from src.domain.pipelines.ingestion.complete.facades.abs_hashing_service import HashingService
+from src.domain.pipelines.ingestion.complete.facades.abs_f_pre_processor import FilePreProcessor
+from src.domain.pipelines.ingestion.complete.modules.local_file_service.pathes import RAW_DATA, PROCESSED_DATA
+from src.domain.pipelines.ingestion.complete.facades.abs_f_administrator import FileAdministrator
+from src.domain.pipelines.ingestion.complete.modules.local_file_service.config import CHUNKS_FOLDER_NAME, DEFAULT_FILE_NAME
 from src.domain.pipelines.ingestion.pipeline_entities.data_classes import IngestionPipelineContext
 from src.domain.pipelines.ingestion.pipeline_entities.enums import Action, Status
 
 
 
 class BaseFileAdministrator(FileAdministrator):
-    def __init__(self, pre_processor: type[FilePreProcessor]) -> None:
-        super().__init__(pre_processor)
-        self._recent_file_metadata: IngestionPipelineContext
+    def __init__(self, pre_processor: type[FilePreProcessor], hasher: type[HashingService]) -> None:
+        super().__init__(pre_processor, hasher)
 
     
     def _add_metadata(self, file_path: Path, action: Action, hash_: str) -> None:
@@ -69,10 +68,6 @@ class BaseFileAdministrator(FileAdministrator):
         file_path = folder_path / folder_name
         with open(file_path, 'w', encoding='utf-8') as f:
             f.write(file)
-
-    def _read_stream_hash(self, f_path: Path) -> str:
-        with open(f_path, 'rb') as f:
-            return hashlib.file_digest(f, hashlib.sha256).hexdigest()
     
 
     def find_raw_data_left(self) -> list[str]:
@@ -100,7 +95,7 @@ class BaseFileAdministrator(FileAdministrator):
                                If you want to replace it- use `update = True` flag')
         
         action = Action.UPDATED if content_exists and update else Action.ADDED
-        hash_ = self._read_stream_hash(file_path)
+        hash_ = self._hasher.hash_it(file_path)
         self._add_metadata(file_path, action, hash_)
         # Default file name already contains an extension
         self._save_file_to_main_dir(processed, folder_path, DEFAULT_FILE_NAME)
@@ -109,7 +104,7 @@ class BaseFileAdministrator(FileAdministrator):
     def delete_file(self, file_name: str, delete_raw: bool = True) -> bool:
         processed_folder = self._define_main_dir(PROCESSED_DATA, file_name)
         path_to_the_file = processed_folder / DEFAULT_FILE_NAME
-        hash_ = self._read_stream_hash(path_to_the_file)
+        hash_ = self._hasher.hash_it(path_to_the_file)
 
         if processed_folder.exists() and processed_folder.is_dir():
             shutil.rmtree(processed_folder)
@@ -138,4 +133,4 @@ class BaseFileAdministrator(FileAdministrator):
         """
         No usage for `data` argument since this is the first module in line
         """
-        return self._recent_file_metadata
+        ...

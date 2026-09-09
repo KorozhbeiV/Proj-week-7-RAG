@@ -16,3 +16,10 @@ class Status(Enum):
     EMBEDED = 'embeded'
     VBD_UPDATED = 'vdb_updated'
     SYNCED = 'synced'
+
+
+
+class FieldType(Enum):
+    MAIN = 'main'
+    FILE = 'metadata'
+    CHUNK = 'internal'

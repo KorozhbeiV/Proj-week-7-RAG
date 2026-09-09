@@ -2,7 +2,7 @@ from pathlib import Path
 from dataclasses import replace
 from langchain_core.embeddings import Embeddings
 from langchain_experimental.text_splitter import SemanticChunker
-from src.domain.pipelines.ingestion.facades.abs_chunking_service import ChunkingService
+from src.domain.pipelines.ingestion.primitive.facades.abs_chunking_service import ChunkingService
 from src.domain.shared.registry.enums import ChunkingServiceKind
 from src.domain.pipelines.ingestion.pipeline_entities.data_classes import IngestionPipelineContext
 

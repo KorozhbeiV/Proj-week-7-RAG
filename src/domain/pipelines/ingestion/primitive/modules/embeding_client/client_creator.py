@@ -1,11 +1,8 @@
 from typing import TypeVar
-
-from dataclasses import replace
 from google.genai import Client
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
-from domain.pipelines.ingestion.pipeline_entities.data_classes import IngestionPipelineContext
 from src.domain.shared.api_keys import GEMINI_API_KEY
-from src.domain.pipelines.ingestion.facades.abs_embeding_client import EmbedClientCreator
+from src.domain.pipelines.ingestion.primitive.facades.abs_embeding_client import EmbedClientCreator
 from src.domain.shared.registry.enums import EmbedingClientCreatorKind
 
 TNativeClient = TypeVar('TNativeClient')
@@ -13,9 +10,7 @@ TNativeClient = TypeVar('TNativeClient')
 
 
 class BaseEmbedClientCreator(EmbedClientCreator[TNativeClient]):
-    def execute_module(self, data: IngestionPipelineContext) -> IngestionPipelineContext:
-        return replace(data, embeding_model=self._model_name, embeding_client=self.create_ebmeding_client())
-
+    ...
 
 
 class GeminiEmbedClientCreator(BaseEmbedClientCreator[Client],

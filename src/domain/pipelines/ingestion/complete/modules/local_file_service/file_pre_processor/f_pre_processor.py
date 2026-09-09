@@ -1,5 +1,5 @@
 from pathlib import Path
-from src.domain.pipelines.ingestion.facades.abs_f_pre_processor import FilePreProcessor
+from src.domain.pipelines.ingestion.complete.facades.abs_f_pre_processor import FilePreProcessor
 
 
 
