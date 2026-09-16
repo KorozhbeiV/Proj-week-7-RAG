@@ -3,14 +3,15 @@ from google.genai import Client
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
 from src.domain.shared.api_keys import GEMINI_API_KEY
 from src.domain.pipelines.ingestion.primitive.facades.abs_embeding_client import EmbedClientCreator
-from src.domain.shared.registry.enums import EmbedingClientCreatorKind
+from src.domain.pipelines.ingestion.pipeline_entities.registry_enums import EmbedingClientCreatorKind
 
 TNativeClient = TypeVar('TNativeClient')
 
 
 
 class BaseEmbedClientCreator(EmbedClientCreator[TNativeClient]):
-    ...
+    def __init__(self, model_name: str | None) -> None:
+        self._model_name = model_name
 
 
 class GeminiEmbedClientCreator(BaseEmbedClientCreator[Client],

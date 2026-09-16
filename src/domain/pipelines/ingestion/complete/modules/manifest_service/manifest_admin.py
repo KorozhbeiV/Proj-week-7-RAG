@@ -9,6 +9,7 @@ from datetime import datetime
 from domain.pipelines.ingestion.pipeline_entities.data_classes import IngestionPipelineContext
 from src.domain.pipelines.ingestion.complete.facades.abs_manifest_service import ManifestManager
 from src.domain.pipelines.ingestion.pipeline_entities.enums import Status, FieldType
+from src.domain.pipelines.ingestion.pipeline_entities.registry_enums import ManifestManagerKind
 
 
 
@@ -29,11 +30,11 @@ class BaseManifestManager(ManifestManager):
         self.init_database()
         result = self.load_data(data)
         assert result == True
-        return data
+        return dataclasses.replace(data, status=Status.SYNCED)
 
 
 
-class Sqlite3ManifestManager(BaseManifestManager):
+class Sqlite3ManifestManager(BaseManifestManager, kind=ManifestManagerKind.SQLITE3.value):
     @contextmanager
     def __connection(self) -> Iterator[sqlite3.Connection]:
         conn = sqlite3.connect(self.db_path)
@@ -83,11 +84,10 @@ class Sqlite3ManifestManager(BaseManifestManager):
 
 
     def _update_metadata(self, data: IngestionPipelineContext) -> dict[str, dict[str, Any] | list[dict[str, Any]]]:
-        file_data = {
-                f.name: getattr(data, f.name) for
-                f in dataclasses.fields(data) if
-                self.__metadata_filter(f, FieldType.FILE)
-            }
+        file_data = {f.name: getattr(data, f.name) for
+                    f in dataclasses.fields(data) if
+                    self.__metadata_filter(f, FieldType.FILE)
+                    }
         assert (t_chunks := data.text_chunk) is not None
         assert (chunk_num := len(t_chunks)) == (id_num := len(data.chunk_ids)),\
             (f"Expected even number of chunks and ids. Given chunks: {chunk_num}, ids: {id_num}")

@@ -13,24 +13,23 @@ from langchain_core.vectorstores import VectorStore
 from langchain_core.embeddings import Embeddings
 from qdrant_client import QdrantClient
 from qdrant_client.models import Distance, VectorParams
-from src.domain.pipelines.ingestion.complete.facades.abs_hashing_service import HashingService
 from src.domain.shared.api_keys import QDRANT_API_KEY, QDRANT_CLASTER_ENDPOINT
 from src.domain.shared.config.constants import QDRANT_VECTOR_DB_COLLECTION_NAME
 from src.domain.pipelines.ingestion.primitive.facades.abs_vector_db_service import VectorDBService
-from src.domain.shared.registry.enums import VectorDBServiceKind
+from src.domain.pipelines.ingestion.pipeline_entities.registry_enums import VectorDBServiceKind
 from src.domain.pipelines.ingestion.pipeline_entities.data_classes import IngestionPipelineContext
 from src.domain.pipelines.ingestion.pipeline_entities.enums import Action, Status
 
 
 
 class BaseDBService(VectorDBService):
-    def __init__(self, store: VectorStore, hasher: type[HashingService]) -> None:
-        super().__init__(store, hasher)
+    def __init__(self, store: VectorStore) -> None:
+        super().__init__(store)
 
     @classmethod
-    def _get_instance(cls, store: VectorStore, hasher: type[HashingService]) -> Self:
+    def _get_instance(cls, store: VectorStore) -> Self:
         if cls._instance is None:
-            cls._instance = cls(store, hasher)
+            cls._instance = cls(store)
         return cast(Self, cls._instance)
     
     @staticmethod
@@ -83,7 +82,7 @@ class BaseDBService(VectorDBService):
 
 class QdrantDBService(BaseDBService, kind=VectorDBServiceKind.QDRANT_DB_SERVICE.value):
     @classmethod
-    def create(cls, embeding_model: Embeddings, hasher: type[HashingService]) -> Self:
+    def create(cls, embeding_model: Embeddings) -> Self:
         client = QdrantClient(
                         url=QDRANT_CLASTER_ENDPOINT,
                         api_key=QDRANT_API_KEY
@@ -98,7 +97,7 @@ class QdrantDBService(BaseDBService, kind=VectorDBServiceKind.QDRANT_DB_SERVICE.
                     collection_name=QDRANT_VECTOR_DB_COLLECTION_NAME,
                     embedding=embeding_model,
                 )
-        return cls._get_instance(store, hasher)
+        return cls._get_instance(store)
 
 
     def add_to_db(self,

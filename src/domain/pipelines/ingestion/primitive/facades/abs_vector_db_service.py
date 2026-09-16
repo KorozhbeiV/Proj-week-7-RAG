@@ -1,16 +1,16 @@
 from typing import ClassVar, Any, Self, TYPE_CHECKING
 from abc import abstractmethod
-from src.domain.pipelines.ingestion.primitive.orcestration.abs_main_pipeline_class import IngestionPipeline
+from src.domain.pipelines.ingestion.primitive.facades.abs_main_pipeline_class import IngestionPipeline
 
 if TYPE_CHECKING:
     from langchain_core.vectorstores import VectorStore
     from langchain_core.embeddings import Embeddings
     from src.domain.pipelines.ingestion.pipeline_entities.data_classes import IngestionPipelineContext
-    from src.domain.pipelines.ingestion.complete.facades.abs_hashing_service import HashingService
+    from src.domain.pipelines.ingestion.protocols.primitive_support_registry import SupportRegistry
 
 
 
-class VectorDBService(IngestionPipeline):
+class VectorDBService(IngestionPipeline, SupportRegistry):
     """
     ### Use method `create` to init this class
     """
@@ -19,9 +19,8 @@ class VectorDBService(IngestionPipeline):
     _store: VectorStore
     
 
-    def __init__(self, store : VectorStore, hasher: type[HashingService]) -> None:
+    def __init__(self, store : VectorStore) -> None:
         self._store = store
-        self._hasher = hasher()
 
 
     def __init_subclass__(cls, kind: str | None = None, **kwargs: Any) -> None:
@@ -32,7 +31,7 @@ class VectorDBService(IngestionPipeline):
 
     @classmethod
     @abstractmethod
-    def _get_instance(cls, store: VectorStore, hasher: type[HashingService]) -> Self:
+    def _get_instance(cls, store: VectorStore) -> Self:
         ...
 
     @abstractmethod
@@ -51,7 +50,7 @@ class VectorDBService(IngestionPipeline):
 
     @classmethod
     @abstractmethod
-    def create(cls, embeding_model: Embeddings, hasher: type[HashingService]) -> Self:
+    def create(cls, embeding_model: Embeddings) -> Self:
         ...
 
     @abstractmethod

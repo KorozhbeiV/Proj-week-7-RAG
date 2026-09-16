@@ -1,6 +1,6 @@
 from typing import ClassVar, Any, Literal, TYPE_CHECKING
 from abc import abstractmethod
-from src.domain.pipelines.ingestion.primitive.orcestration.abs_main_pipeline_class import IngestionPipeline
+from src.domain.pipelines.ingestion.primitive.facades.abs_main_pipeline_class import IngestionPipeline
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -10,8 +10,9 @@ if TYPE_CHECKING:
     from src.domain.pipelines.ingestion.complete.facades.abs_hashing_service import HashingService
 
 
+
 class FileAdministrator(IngestionPipeline):
-    registry: ClassVar[dict[str, type]]
+    registry: ClassVar[dict[str, type[FileAdministrator]]]
 
     def __init__(self, pre_processor: type[FilePreProcessor], hasher: type[HashingService]) -> None:
         self._pre_processor = pre_processor()

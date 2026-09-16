@@ -1,14 +1,15 @@
 from typing import TYPE_CHECKING, Any, ClassVar
 from abc import abstractmethod
-from src.domain.pipelines.ingestion.primitive.orcestration.abs_main_pipeline_class import IngestionPipeline
+from src.domain.pipelines.ingestion.primitive.facades.abs_main_pipeline_class import IngestionPipeline
 
 if TYPE_CHECKING:
     from pathlib import Path
     from langchain_core.embeddings import Embeddings
+    from src.domain.pipelines.ingestion.protocols.primitive_support_registry import SupportRegistry
 
 
 
-class ChunkingService(IngestionPipeline):
+class ChunkingService(IngestionPipeline, SupportRegistry):
     registry: ClassVar[dict[str, type[ChunkingService]]]
 
     def __init__(self, embeding_model: Embeddings) -> None:

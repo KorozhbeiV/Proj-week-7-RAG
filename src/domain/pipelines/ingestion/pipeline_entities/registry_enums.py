@@ -21,6 +21,10 @@ class VectorDBServiceKind(Enum):
     QDRANT_DB_SERVICE = 'qdrant_db_service'
 
 
+class ManifestManagerKind(Enum):
+    SQLITE3 = 'sqlite3'
+
+
 
 class FileAdministratorKInd(Enum):
     ... # No concrete implementations yet
