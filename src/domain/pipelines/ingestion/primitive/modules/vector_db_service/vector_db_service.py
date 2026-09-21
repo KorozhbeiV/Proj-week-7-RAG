@@ -6,7 +6,7 @@
 - Error raising (if any)
 in the given vector DB
 """
-from typing import Any, Self, cast
+from typing import Any, Self, cast, Iterator
 from dataclasses import replace, fields
 from langchain_qdrant import QdrantVectorStore
 from langchain_core.vectorstores import VectorStore
@@ -33,8 +33,9 @@ class BaseDBService(VectorDBService):
         return cast(Self, cls._instance)
     
     @staticmethod
-    def _get_ids_to_delete(metadatas: list[dict[str, Any]]) -> list[str | int]:
-        return [el['chunk_ids'] for el in metadatas]
+    def _get_ids_to_delete(metadatas: dict[str, dict[str, Any] | list[dict[str, Any]]]) -> list[str | int]:
+        chunks = cast(list[dict[str, Any]], metadatas['chunks'])
+        return [el["chunk_ids"] for el in chunks]
     
     @staticmethod
     def _get_metadata_for_chunks(data: IngestionPipelineContext) -> list[dict[str, Any]]:
@@ -48,26 +49,30 @@ class BaseDBService(VectorDBService):
                 idx, _ in
                 enumerate(chunks)
                 ]
+    
+    @staticmethod
+    def _batched(texts: list[str], metadatas: list[dict[str, Any]], size: int = 20) -> Iterator[tuple[list[str], list[dict[str, Any]]]]:
+        for i in range(0, len(texts), size):
+            yield texts[i:i + size], metadatas[i:i + size]
 
     
     def perform_action_over_files(self, data: IngestionPipelineContext) -> dict[str, Any]:
         assert (action := data.action) is not None
-        assert (md := data.chunk_metadata) # Is not an empty list
 
         if action == Action.DELETED:
+            assert (md := data.file_metadata) # Is not an empty list
             ids_to_delete = self._get_ids_to_delete(md)
             return {"chunks_deleted": self.delete_from_db(ids_to_delete),
-                    "chunks_ids": []
+                    "chunk_ids": [],
+                    "delete_record_for_file": True
                     }
-        assert (chunks := data.text_chunk) is not None
+        assert (texts := data.text_chunk) is not None
         metadatas = self._get_metadata_for_chunks(data)
-        if action == Action.UPDATED:
-            ids_to_delete = self._get_ids_to_delete(md)
-            return {"chunks_ids": self.update_db(ids_to_delete, chunks, metadatas),
-                    "chunks_deleted": None
-                    }
         if action == Action.ADDED:
-            return {"chunks_ids": self.add_to_db(chunks, metadatas),
+            chunk_ids: list[str | int] = []
+            for c, m in self._batched(texts, metadatas):
+                chunk_ids.extend(self.add_to_db(c, m))
+            return {"chunk_ids": chunk_ids,
                     "chunks_deleted": None
                     }
         raise RuntimeError(f"No action was performed over the given file: '{data.f_path}'")
@@ -76,7 +81,9 @@ class BaseDBService(VectorDBService):
     def execute_module(self, data: IngestionPipelineContext) -> IngestionPipelineContext:
         performed = self.perform_action_over_files(data)
         performed.update({"status": Status.VBD_UPDATED})
-        return replace(data, **performed)
+        result = replace(data, **performed)
+        self._log_changes(result)
+        return result
 
 
 
@@ -85,7 +92,8 @@ class QdrantDBService(BaseDBService, kind=VectorDBServiceKind.QDRANT_DB_SERVICE.
     def create(cls, embeding_model: Embeddings) -> Self:
         client = QdrantClient(
                         url=QDRANT_CLASTER_ENDPOINT,
-                        api_key=QDRANT_API_KEY
+                        api_key=QDRANT_API_KEY,
+                        timeout=100
                         )
         if not client.collection_exists(QDRANT_VECTOR_DB_COLLECTION_NAME):
             client.create_collection(

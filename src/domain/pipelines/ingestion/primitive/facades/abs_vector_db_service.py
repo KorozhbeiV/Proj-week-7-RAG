@@ -1,22 +1,22 @@
 from typing import ClassVar, Any, Self, TYPE_CHECKING
 from abc import abstractmethod
-from src.domain.pipelines.ingestion.primitive.facades.abs_main_pipeline_class import IngestionPipeline
+from src.domain.pipelines.ingestion.base_shared_classes.ingestion_pipeline import BaseIngestionPipeline
+from src.domain.pipelines.ingestion.protocols.primitive_support_registry import SupportRegistry
 
 if TYPE_CHECKING:
     from langchain_core.vectorstores import VectorStore
     from langchain_core.embeddings import Embeddings
     from src.domain.pipelines.ingestion.pipeline_entities.data_classes import IngestionPipelineContext
-    from src.domain.pipelines.ingestion.protocols.primitive_support_registry import SupportRegistry
 
 
 
-class VectorDBService(IngestionPipeline, SupportRegistry):
+class VectorDBService(BaseIngestionPipeline, SupportRegistry):
     """
     ### Use method `create` to init this class
     """
-    registry: ClassVar[dict[str, type[VectorDBService]]]
-    _instance: ClassVar[VectorDBService | None]
-    _store: VectorStore
+    registry: ClassVar[dict[str, type[VectorDBService]]] = {}
+    _instance: ClassVar[VectorDBService | None] = None
+    _store: VectorStore | None = None
     
 
     def __init__(self, store : VectorStore) -> None:
@@ -34,14 +34,14 @@ class VectorDBService(IngestionPipeline, SupportRegistry):
     def _get_instance(cls, store: VectorStore) -> Self:
         ...
 
-    @abstractmethod
     @staticmethod
+    @abstractmethod
     def _get_metadata_for_chunks(data: IngestionPipelineContext) -> list[dict[str, Any]]:
         ...
     
-    @abstractmethod
     @staticmethod
-    def _get_ids_to_delete(metadatas: list[dict[str, Any]]) -> list[str | int]:
+    @abstractmethod
+    def _get_ids_to_delete(metadatas: dict[str, dict[str, Any] | list[dict[str, Any]]]) -> list[str | int]:
         ...
 
     @abstractmethod

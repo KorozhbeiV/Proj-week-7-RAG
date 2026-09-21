@@ -23,8 +23,10 @@ class BaseChunkingService(ChunkingService):
     def execute_module(self, data: IngestionPipelineContext) -> IngestionPipelineContext:
         assert data.f_path is not None
         read = self.read_file(data.f_path)
-        chunks, chunk_count, chinking_type = self.split_on_chunks(read)
-        return replace(data, chunks=chunks, chunk_count=chunk_count, chinking_type=chinking_type, status=Status.CHUNKED)
+        text_chunk, chunk_count, chinking_type = self.split_on_chunks(read)
+        result = replace(data, text_chunk=text_chunk, chunk_count=chunk_count, chinking_type=chinking_type, status=Status.CHUNKED)
+        self._log_changes(result)
+        return result
 
 
 

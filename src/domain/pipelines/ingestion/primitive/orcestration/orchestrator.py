@@ -1,58 +1,95 @@
 from enum import Enum
 from pathlib import Path
+from dataclasses import fields
+from typing import Unpack, Any
+from src.shared.logger_config import logger
 from src.domain.pipelines.ingestion.primitive.orcestration.abs_orchestrator import Orchestrator
 from src.domain.pipelines.ingestion.pipeline_entities.enums import Status, Action
 from src.domain.pipelines.ingestion.pipeline_entities.data_classes import IngestionPipelineContext
-from src.domain.pipelines.ingestion.primitive.facades\
-    import abs_chunking_service, abs_embeding_client, abs_vector_db_service, abs_main_pipeline_class
+from src.domain.pipelines.ingestion.shared_abstracts.abs_ingestion_pipeline import IngestionPipeline
+from src.domain.pipelines.ingestion.primitive.orcestration.dict_type import AddedWkargs, DeletedKwargs
 from src.domain.pipelines.ingestion.complete.facades.abs_manifest_service import ManifestManager
+from src.domain.pipelines.ingestion.primitive.facades\
+    import abs_chunking_service, abs_embeding_client, abs_vector_db_service
 
-IngestionPipeline = abs_main_pipeline_class.IngestionPipeline
 ChunkingService = abs_chunking_service.ChunkingService
 EmbedClientCreator = abs_embeding_client.EmbedClientCreator
 VectorDBService = abs_vector_db_service.VectorDBService
 
 
 
-class PrimitiveOrchestrator(Orchestrator):
-    def __init__(self, embeding_key: Enum,
-                chunking_service_key: Enum, 
-                vdb_key: Enum,
-                manifest_key: Enum,
-                status_to_stop: Status
-                ) -> None:
-        super().__init__(embeding_key, chunking_service_key, vdb_key, manifest_key, status_to_stop)
-
+class BaseOrchestrator(Orchestrator):
+    def __init__(self, action: Action, status_to_stop: Status, **kwargs: Any) -> None:
+        super().__init__(action, status_to_stop, **kwargs)
+    
+    @staticmethod
+    def _logger(class_: type[object]) -> None:
+        logger.debug(f'Deffined: {class_}')
 
     @staticmethod
     def _get_initial_context(file: Path, action: Action) -> IngestionPipelineContext:
         return IngestionPipelineContext(file, action, status=Status.FILE_PROCESSED)
 
 
-    def _create_executive_path(self) -> dict[str, IngestionPipeline]:
-        Client = EmbedClientCreator.registry[self._embeding_key.value]
+    def _execute_modules(self, initial_context: IngestionPipelineContext, executive_path: dict[Enum, IngestionPipeline]) -> None:
+        while initial_context.status != self._status_to_stop:
+            module = executive_path[initial_context.status]
+            initial_context = module.execute_module(initial_context)
+
+
+    def process_file(self, file: Path) -> None:
+        context = self._get_initial_context(file, self._action)
+        context_to_log = [getattr(context, f.name) for f in fields(context)]
+        logger.info(f'Created initial context: {context_to_log}')
+
+        logger.debug(f"Deffined path builder strategy: '{self._action.value}'")
+        path = self._create_executive_path(**self._module_keys)
+        path_to_log = [f"{k}: {type(v)}" for k, v in path.items()]
+        logger.info(f"Executive path is created: {path_to_log}")
+
+        self._execute_modules(context, path)
+
+
+
+class AddingOrchestrator(BaseOrchestrator, kind=Action.ADDED.value):
+    def _create_executive_path(self,
+                            **kwargs: Unpack[AddedWkargs]
+                            ) -> dict[Enum, IngestionPipeline]:
+        Client = EmbedClientCreator.registry[kwargs['embeding_key'].value]
         embeding_client = Client(None)
         embed_model = embeding_client.create_ebmeding_client()
+        self._logger(Client)
 
-        Service = ChunkingService.registry[self._chunking_service_key.value]
+        Service = ChunkingService.registry[kwargs['chunking_service_key'].value]
         chunking_service = Service(embed_model)
+        self._logger(Service)
 
-        Db = VectorDBService.registry[self._vdb_key.value]
+        Db = VectorDBService.registry[kwargs['vdb_key'].value]
         vdb = Db.create(embed_model)
+        self._logger(Db)
 
-        manifest = ManifestManager.registry[self._manifest_key.value]()
+        Manifest = ManifestManager.registry[kwargs['manifest_key'].value]
+        self._logger(Manifest)
         
-        return {Status.FILE_PROCESSED.value: chunking_service, Status.CHUNKED.value: vdb, Status.VBD_UPDATED.value: manifest}
-    
+        return {Status.FILE_PROCESSED: chunking_service, Status.CHUNKED: vdb, Status.VBD_UPDATED: Manifest()}
 
-    def _execute_modules(self, initial_context: IngestionPipelineContext, executive_path: dict[str, IngestionPipeline]) -> None:
-        while initial_context.status != self._status_to_stop:
-            module = executive_path[initial_context.status.value]
-            result = module.execute_module(initial_context)
-            print(result)
-    
 
-    def process_file(self, file: Path, action: Action) -> None:
-        context = self._get_initial_context(file, action)
-        path = self._create_executive_path()
-        self._execute_modules(context, path)
+
+class DeletingOrchestrator(BaseOrchestrator, kind=Action.DELETED.value):
+    def _create_executive_path(self,
+                            **kwargs: Unpack[DeletedKwargs]
+                            ) -> dict[Enum, IngestionPipeline]:
+        Client = EmbedClientCreator.registry[kwargs['embeding_key'].value]
+        embeding_client = Client(None)
+        embed_model = embeding_client.create_ebmeding_client()
+        self._logger(Client)
+
+        Db = VectorDBService.registry[kwargs['vdb_key'].value]
+        vdb = Db.create(embed_model)
+        self._logger(Db)
+
+        Manifest = ManifestManager.registry[kwargs['manifest_key'].value]
+        self._logger(Manifest)
+        manifest = Manifest()
+
+        return {Status.FILE_PROCESSED: manifest, Status.FILE_DATA_RETRIEVED: vdb, Status.VBD_UPDATED: manifest}

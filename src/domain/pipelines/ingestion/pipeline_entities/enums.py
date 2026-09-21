@@ -5,7 +5,6 @@ from enum import Enum
 class Action(Enum):
     DELETED = 'deleted'
     ADDED = 'added'
-    UPDATED = 'updated'
 
 
 
@@ -16,6 +15,7 @@ class Status(Enum):
     EMBEDED = 'embeded'
     VBD_UPDATED = 'vdb_updated'
     SYNCED = 'synced'
+    FILE_DATA_RETRIEVED = 'file_data_retrieved'
 
 
 

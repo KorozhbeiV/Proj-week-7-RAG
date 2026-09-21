@@ -26,3 +26,8 @@ class IngestionPipeline(ABC):
         - Each module guarantees that it writes fields that only this module can work with
         """
         ...
+
+    @staticmethod
+    @abstractmethod
+    def _log_changes(data: IngestionPipelineContext) -> None:
+        ...

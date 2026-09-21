@@ -49,13 +49,18 @@ class IngestionPipelineContext:
         metadata={'type': FieldType.FILE, 'chunk_metadata': False}
         )
     # vector_db_service module
+    delete_record_for_file: bool = field(
+        default=False
+        )
     chunk_ids: list[int | str] = field(
         default_factory=list[int | str],
         metadata={'type': FieldType.CHUNK, 'chunk_metadata': False}
         )
     chunks_deleted: bool | None = None
     # manifest module
-    chunk_metadata: list[dict[str, Any]] = field(default_factory=list[dict[str, Any]])
+    file_metadata: dict[str, dict[str, Any] | list[dict[str, Any]]] = field(
+        default_factory=dict[str, dict[str, Any] | list[dict[str, Any]]]
+        )
     # global status, main pipeline parameter
     status: Status = field(
         default=Status.PENDING,

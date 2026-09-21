@@ -1,14 +1,14 @@
-import sqlite3
 import json
+import sqlite3
 import dataclasses
-from typing import Iterator, Any
-from contextlib import contextmanager
+from typing import Iterator, Any, cast
 from enum import Enum
 from pathlib import Path
 from datetime import datetime
-from domain.pipelines.ingestion.pipeline_entities.data_classes import IngestionPipelineContext
+from contextlib import contextmanager
+from src.domain.pipelines.ingestion.pipeline_entities.data_classes import IngestionPipelineContext
 from src.domain.pipelines.ingestion.complete.facades.abs_manifest_service import ManifestManager
-from src.domain.pipelines.ingestion.pipeline_entities.enums import Status, FieldType
+from src.domain.pipelines.ingestion.pipeline_entities.enums import Status, FieldType, Action
 from src.domain.pipelines.ingestion.pipeline_entities.registry_enums import ManifestManagerKind
 
 
@@ -25,12 +25,38 @@ class BaseManifestManager(ManifestManager):
             return obj.value
         raise TypeError(f"Cannot serialize {type[obj]}")
     
+    
+    def __adding_path(self, data: IngestionPipelineContext) -> IngestionPipelineContext:
+        self.init_database()
+        assert (result := self.load_new_data(data))
+        result = dataclasses.replace(data, status=Status.SYNCED)
+        self._log_changes(result)
+        return result
+    
+
+    def __retrieve_metadata(self, data: IngestionPipelineContext) -> IngestionPipelineContext:
+        self.init_database()
+        metadata = self.retrieve_metadata(data)
+        result = dataclasses.replace(data, file_metadata=metadata, status=Status.FILE_DATA_RETRIEVED)
+        self._log_changes(result)
+        return result
+    
+
+    def __delete_record(self, data: IngestionPipelineContext) -> IngestionPipelineContext:
+        assert (path := data.f_path) is not None
+        deleted = self.delete_record(path)
+        assert deleted, f"The procces of delete was not proccesed successfully over the '{path}' file"
+        return dataclasses.replace(data, status=Status.SYNCED)
+
 
     def execute_module(self, data: IngestionPipelineContext) -> IngestionPipelineContext:
-        self.init_database()
-        result = self.load_data(data)
-        assert result == True
-        return dataclasses.replace(data, status=Status.SYNCED)
+        if data.delete_record_for_file:
+            return self.__delete_record(data)
+        if data.action == Action.ADDED:
+            return self.__adding_path(data)
+        if data.action == Action.DELETED:
+            return self.__retrieve_metadata(data)
+        raise RuntimeError(f"Unknown action '{data.action}' to perform in '{__file__}'")
 
 
 
@@ -38,6 +64,7 @@ class Sqlite3ManifestManager(BaseManifestManager, kind=ManifestManagerKind.SQLIT
     @contextmanager
     def __connection(self) -> Iterator[sqlite3.Connection]:
         conn = sqlite3.connect(self.db_path)
+        conn.row_factory = sqlite3.Row
         try:
             yield conn
             conn.commit()
@@ -52,15 +79,15 @@ class Sqlite3ManifestManager(BaseManifestManager, kind=ManifestManagerKind.SQLIT
         allowed = ", ".join(f"'{s.value}'" for s in Status)
         with self.__connection() as conn:
             conn.execute(f"""
-                                CREATE TABLE IF NOT EXISTS manifest(
+                            CREATE TABLE IF NOT EXISTS manifest(
                                 f_path TEXT PRIMARY KEY NOT NULL,
                                 status TEXT NOT NULL CHECK(status IN ({allowed})),
                                 metadata TEXT NOT NULL
-                            )    
+                                )    
                         """)
 
 
-    def load_data(self, data: IngestionPipelineContext) -> bool:
+    def load_new_data(self, data: IngestionPipelineContext) -> bool:
         with self.__connection() as conn:
             try:
                 conn.execute("INSERT INTO manifest VALUES(?, ?, ?)",
@@ -72,6 +99,35 @@ class Sqlite3ManifestManager(BaseManifestManager, kind=ManifestManagerKind.SQLIT
                                     )
                                 )
                             )
+                return True
+            except:
+                return False
+
+    @staticmethod
+    def __json_metadata_to_py(metadata_row: str) -> dict[str, dict[str, Any] | list[dict[str, Any]]]:
+        real_metadata = cast(dict[str, Any], json.loads(metadata_row))
+        return real_metadata
+    
+
+    def retrieve_metadata(self, data: IngestionPipelineContext) -> dict[str, dict[str, Any] | list[dict[str, Any]]]:
+        assert (f_path := data.f_path) is not None
+        with self.__connection() as conn:
+            try:
+                result = conn.execute("SELECT metadata FROM manifest WHERE f_path = ?",
+                            (str(f_path),))
+                json_row = cast(sqlite3.Row | None, result.fetchone())
+                assert json_row is not None
+            except:
+                raise RuntimeError(f"Something went wrong in '{__file__}'")
+            else:
+                return self.__json_metadata_to_py(json_row['metadata'])
+
+
+    def delete_record(self, f_path: Path) -> bool:
+        with self.__connection() as conn:
+            try:
+                conn.execute("DELETE FROM manifest WHERE f_path = ?",
+                            (str(f_path),))
                 return True
             except:
                 return False

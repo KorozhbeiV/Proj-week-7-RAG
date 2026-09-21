@@ -5,17 +5,17 @@ from typing import overload
 
 
 class HashingService(ABC):
-    @overload
     @staticmethod
+    @overload
     def hash_it(text: Path) -> str:
         ...
     
-    @overload
     @staticmethod
+    @overload
     def hash_it(text: list[str]) -> list[str]:
         ...
     
-    @abstractmethod
     @staticmethod
+    @abstractmethod
     def hash_it(text: Path | list[str]) -> str | list[str]:
         ...
