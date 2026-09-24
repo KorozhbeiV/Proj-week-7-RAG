@@ -13,9 +13,10 @@ from langchain_core.vectorstores import VectorStore
 from langchain_core.embeddings import Embeddings
 from qdrant_client import QdrantClient
 from qdrant_client.models import Distance, VectorParams
+from src.shared.logger_config import logger
 from src.domain.shared.api_keys import QDRANT_API_KEY, QDRANT_CLASTER_ENDPOINT
 from src.domain.shared.config.constants import QDRANT_VECTOR_DB_COLLECTION_NAME
-from src.domain.pipelines.ingestion.primitive.facades.abs_vector_db_service import VectorDBService
+from src.domain.pipelines.shared_modules.facades.abs_vector_db_service import VectorDBService
 from src.domain.pipelines.ingestion.pipeline_entities.registry_enums import VectorDBServiceKind
 from src.domain.pipelines.ingestion.pipeline_entities.data_classes import IngestionPipelineContext
 from src.domain.pipelines.ingestion.pipeline_entities.enums import Action, Status
@@ -53,7 +54,9 @@ class BaseDBService(VectorDBService):
     @staticmethod
     def _batched(texts: list[str], metadatas: list[dict[str, Any]], size: int = 20) -> Iterator[tuple[list[str], list[dict[str, Any]]]]:
         for i in range(0, len(texts), size):
+            logger.debug(f"Processing '{i}' chunks out of {len(texts)}")
             yield texts[i:i + size], metadatas[i:i + size]
+            
 
     
     def perform_action_over_files(self, data: IngestionPipelineContext) -> dict[str, Any]:

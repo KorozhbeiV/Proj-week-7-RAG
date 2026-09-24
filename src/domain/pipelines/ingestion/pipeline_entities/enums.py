@@ -15,7 +15,7 @@ class Status(Enum):
     EMBEDED = 'embeded'
     VBD_UPDATED = 'vdb_updated'
     SYNCED = 'synced'
-    FILE_DATA_RETRIEVED = 'file_data_retrieved'
+    METADATA_RETRIEVED = 'metadata_retrieved'
 
 
 

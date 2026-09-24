@@ -7,7 +7,7 @@ from pathlib import Path
 from datetime import datetime
 from contextlib import contextmanager
 from src.domain.pipelines.ingestion.pipeline_entities.data_classes import IngestionPipelineContext
-from src.domain.pipelines.ingestion.complete.facades.abs_manifest_service import ManifestManager
+from src.domain.pipelines.shared_modules.facades.abs_manifest_service import ManifestManager
 from src.domain.pipelines.ingestion.pipeline_entities.enums import Status, FieldType, Action
 from src.domain.pipelines.ingestion.pipeline_entities.registry_enums import ManifestManagerKind
 
@@ -37,7 +37,7 @@ class BaseManifestManager(ManifestManager):
     def __retrieve_metadata(self, data: IngestionPipelineContext) -> IngestionPipelineContext:
         self.init_database()
         metadata = self.retrieve_metadata(data)
-        result = dataclasses.replace(data, file_metadata=metadata, status=Status.FILE_DATA_RETRIEVED)
+        result = dataclasses.replace(data, file_metadata=metadata, status=Status.METADATA_RETRIEVED)
         self._log_changes(result)
         return result
     
@@ -117,8 +117,8 @@ class Sqlite3ManifestManager(BaseManifestManager, kind=ManifestManagerKind.SQLIT
                             (str(f_path),))
                 json_row = cast(sqlite3.Row | None, result.fetchone())
                 assert json_row is not None
-            except:
-                raise RuntimeError(f"Something went wrong in '{__file__}'")
+            except Exception as e:
+                raise RuntimeError(f"Something went wrong: '{e}")
             else:
                 return self.__json_metadata_to_py(json_row['metadata'])
 

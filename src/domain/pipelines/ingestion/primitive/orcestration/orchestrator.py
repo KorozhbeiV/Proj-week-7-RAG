@@ -8,13 +8,13 @@ from src.domain.pipelines.ingestion.pipeline_entities.enums import Status, Actio
 from src.domain.pipelines.ingestion.pipeline_entities.data_classes import IngestionPipelineContext
 from src.domain.pipelines.ingestion.shared_abstracts.abs_ingestion_pipeline import IngestionPipeline
 from src.domain.pipelines.ingestion.primitive.orcestration.dict_type import AddedWkargs, DeletedKwargs
-from src.domain.pipelines.ingestion.complete.facades.abs_manifest_service import ManifestManager
-from src.domain.pipelines.ingestion.primitive.facades\
-    import abs_chunking_service, abs_embeding_client, abs_vector_db_service
+from src.domain.pipelines.shared_modules.facades\
+    import abs_chunking_service, abs_embeding_client, abs_vector_db_service, abs_manifest_service
 
 ChunkingService = abs_chunking_service.ChunkingService
 EmbedClientCreator = abs_embeding_client.EmbedClientCreator
 VectorDBService = abs_vector_db_service.VectorDBService
+ManifestManager = abs_manifest_service.ManifestManager
 
 
 
@@ -92,4 +92,4 @@ class DeletingOrchestrator(BaseOrchestrator, kind=Action.DELETED.value):
         self._logger(Manifest)
         manifest = Manifest()
 
-        return {Status.FILE_PROCESSED: manifest, Status.FILE_DATA_RETRIEVED: vdb, Status.VBD_UPDATED: manifest}
+        return {Status.FILE_PROCESSED: manifest, Status.METADATA_RETRIEVED: vdb, Status.VBD_UPDATED: manifest}

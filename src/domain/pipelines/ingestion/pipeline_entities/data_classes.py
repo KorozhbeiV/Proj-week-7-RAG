@@ -16,7 +16,7 @@ class IngestionPipelineContext:
         )
     action: Action | None = field(
         default=None,
-        metadata={'type': FieldType.FILE, 'chunk_metadata': False}
+        metadata={'chunk_metadata': False}
         )
     file_hash: str | None = field(
         default=None,

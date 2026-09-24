@@ -2,7 +2,7 @@ from abc import abstractmethod
 from typing import TYPE_CHECKING, Any, ClassVar
 from src.domain.pipelines.ingestion.base_shared_classes.ingestion_pipeline import BaseIngestionPipeline
 from src.domain.pipelines.ingestion.protocols.primitive_support_registry import SupportRegistry
-from src.domain.pipelines.ingestion.complete.modules.manifest_service.config import PATH_TO_MANIFEST_FILE
+from src.domain.pipelines.shared_modules.modules.manifest_service.config import PATH_TO_MANIFEST_FILE
 
 if TYPE_CHECKING:
     from pathlib import Path

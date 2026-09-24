@@ -2,7 +2,7 @@ from typing import TypeVar
 from google.genai import Client
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
 from src.domain.shared.api_keys import GEMINI_API_KEY
-from src.domain.pipelines.ingestion.primitive.facades.abs_embeding_client import EmbedClientCreator
+from src.domain.pipelines.shared_modules.facades.abs_embeding_client import EmbedClientCreator
 from src.domain.pipelines.ingestion.pipeline_entities.registry_enums import EmbedingClientCreatorKind
 
 TNativeClient = TypeVar('TNativeClient')
