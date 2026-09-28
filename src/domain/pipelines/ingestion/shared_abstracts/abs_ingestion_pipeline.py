@@ -27,7 +27,6 @@ class IngestionPipeline(ABC):
         """
         ...
 
-    @staticmethod
     @abstractmethod
-    def _log_changes(data: IngestionPipelineContext) -> None:
+    def _log_changes(self, data: IngestionPipelineContext) -> None:
         ...

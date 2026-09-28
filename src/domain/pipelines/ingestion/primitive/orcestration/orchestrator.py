@@ -4,7 +4,7 @@ from dataclasses import fields
 from typing import Unpack, Any
 from src.shared.logger_config import logger
 from src.domain.pipelines.ingestion.primitive.orcestration.abs_orchestrator import Orchestrator
-from src.domain.pipelines.ingestion.pipeline_entities.enums import Status, Action
+from src.domain.pipelines.ingestion.pipeline_entities.enums import Status, Action, FileExists
 from src.domain.pipelines.ingestion.pipeline_entities.data_classes import IngestionPipelineContext
 from src.domain.pipelines.ingestion.shared_abstracts.abs_ingestion_pipeline import IngestionPipeline
 from src.domain.pipelines.ingestion.primitive.orcestration.dict_type import AddedWkargs, DeletedKwargs
@@ -28,7 +28,7 @@ class BaseOrchestrator(Orchestrator):
 
     @staticmethod
     def _get_initial_context(file: Path, action: Action) -> IngestionPipelineContext:
-        return IngestionPipelineContext(file, action, status=Status.FILE_PROCESSED)
+        return IngestionPipelineContext(file, action, status=Status.FILE_PROCESSED, f_exists_check=FileExists.REQUIRE_CHECK)
 
 
     def _execute_modules(self, initial_context: IngestionPipelineContext, executive_path: dict[Enum, IngestionPipeline]) -> None:
@@ -70,8 +70,9 @@ class AddingOrchestrator(BaseOrchestrator, kind=Action.ADDED.value):
 
         Manifest = ManifestManager.registry[kwargs['manifest_key'].value]
         self._logger(Manifest)
+        manifest = Manifest()
         
-        return {Status.FILE_PROCESSED: chunking_service, Status.CHUNKED: vdb, Status.VBD_UPDATED: Manifest()}
+        return {Status.FILE_PROCESSED: manifest, Status.MANIFEST_CONFIRMED: chunking_service, Status.CHUNKED: vdb, Status.VBD_UPDATED: manifest}
 
 
 
@@ -92,4 +93,4 @@ class DeletingOrchestrator(BaseOrchestrator, kind=Action.DELETED.value):
         self._logger(Manifest)
         manifest = Manifest()
 
-        return {Status.FILE_PROCESSED: manifest, Status.METADATA_RETRIEVED: vdb, Status.VBD_UPDATED: manifest}
+        return {Status.FILE_PROCESSED: manifest, Status.MANIFEST_CONFIRMED: manifest, Status.METADATA_RETRIEVED: vdb, Status.VBD_UPDATED: manifest}

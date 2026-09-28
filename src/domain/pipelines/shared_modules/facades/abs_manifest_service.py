@@ -31,7 +31,7 @@ class ManifestManager(BaseIngestionPipeline, SupportRegistry):
         ...
 
     @abstractmethod
-    def retrieve_metadata(self, data: IngestionPipelineContext) -> dict[str, dict[str, Any] | list[dict[str, Any]]]:
+    def retrieve_metadata(self, data: IngestionPipelineContext) -> dict[str, dict[str, Any] | list[dict[str, Any]]] | None:
         ...
     
     @abstractmethod

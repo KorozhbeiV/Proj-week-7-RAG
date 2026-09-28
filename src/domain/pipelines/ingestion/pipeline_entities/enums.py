@@ -16,6 +16,7 @@ class Status(Enum):
     VBD_UPDATED = 'vdb_updated'
     SYNCED = 'synced'
     METADATA_RETRIEVED = 'metadata_retrieved'
+    MANIFEST_CONFIRMED = 'manifest_confirmed'
 
 
 
@@ -23,3 +24,10 @@ class FieldType(Enum):
     MAIN = 'main'
     FILE = 'metadata'
     CHUNK = 'internal'
+
+
+
+class FileExists(Enum):
+    REQUIRE_CHECK = 'require_check'
+    NOT = 'not'
+    CONFIRMED = 'confirmed'

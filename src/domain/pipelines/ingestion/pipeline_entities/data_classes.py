@@ -3,7 +3,7 @@ from pathlib import Path
 from dataclasses import dataclass, field
 from datetime import datetime
 from src.domain.pipelines.ingestion.\
-    pipeline_entities.enums import Action, Status, FieldType
+    pipeline_entities.enums import Action, Status, FieldType, FileExists
 
 
 
@@ -58,6 +58,9 @@ class IngestionPipelineContext:
         )
     chunks_deleted: bool | None = None
     # manifest module
+    f_exists_check: FileExists = field(
+        default=FileExists.NOT
+        )
     file_metadata: dict[str, dict[str, Any] | list[dict[str, Any]]] = field(
         default_factory=dict[str, dict[str, Any] | list[dict[str, Any]]]
         )

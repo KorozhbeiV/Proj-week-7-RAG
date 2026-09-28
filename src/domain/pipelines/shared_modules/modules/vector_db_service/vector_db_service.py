@@ -53,8 +53,14 @@ class BaseDBService(VectorDBService):
     
     @staticmethod
     def _batched(texts: list[str], metadatas: list[dict[str, Any]], size: int = 20) -> Iterator[tuple[list[str], list[dict[str, Any]]]]:
-        for i in range(0, len(texts), size):
-            logger.debug(f"Processing '{i}' chunks out of {len(texts)}")
+        total_chunks = len(texts)
+        if size > total_chunks:
+            size = total_chunks
+        logger.debug(f"Batch size: '{size}'")
+        already_processed: int = 0
+        for i in range(0, total_chunks, size):
+            logger.debug(f"Loading chunks... Chunks left: '{total_chunks - already_processed}'")
+            already_processed = i + size
             yield texts[i:i + size], metadatas[i:i + size]
             
 

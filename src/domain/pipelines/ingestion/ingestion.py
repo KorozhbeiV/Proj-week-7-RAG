@@ -15,7 +15,7 @@ orchestrator = get_orchestrator(Action.DELETED,
                                 )
 
 
-the_file = Path('/Users/getapple/Documents/Py_Projects/Proj week 7 RAG/dataset/raw_data/DnD5eSRD_md/DND5eSRD_001-018.md')
+the_file = Path('/Users/getapple/Documents/Py_Projects/Proj week 7 RAG/dataset/raw_data/DnD5eSRD_md/DND5eSRD_077-086.md')
 
 if __name__ == '__main__':
     orchestrator.process_file(the_file)
